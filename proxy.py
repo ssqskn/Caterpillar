@@ -9,7 +9,7 @@ timeout_for_proxy_verify = 5
 
 def urlopen(url):
     url_content = requests.get(url, timeout=timeout_for_urlopen).text
-    print "Get content of ", url
+    print ">>Get content of ", url
     return url_content
     
 def proxy_parser(raw_url_content):
@@ -19,7 +19,6 @@ def proxy_parser(raw_url_content):
 
 def is_proxy_valid(proxy_addr):
     url_content = ""
-    
     proxy_handler = urllib2.ProxyHandler({"http" : "http://%s:%s" 
                                           % (proxy_addr.split(":")[0], 
                                              proxy_addr.split(":")[1])})
@@ -31,12 +30,12 @@ def is_proxy_valid(proxy_addr):
             url_content = urllib2.urlopen('http://www.qq.com', 
                                         timeout=timeout_for_proxy_verify).read()
             if len(url_content) > 0:
-                print "Proxy of %s is valid" % proxy_handler.proxies.values()[0]
+                print ">>Valid: Proxy of %s" % proxy_handler.proxies.values()[0]
                 return (proxy_addr,True)
         except:
             continue
         
-    print "Proxy of %s is invalid" % proxy_handler.proxies.values()[0]
+    print ">>Invalid: Proxy of %s" % proxy_handler.proxies.values()[0]
     return (proxy_addr,False)
 
 
@@ -73,17 +72,15 @@ class ProxySearcher():
         for tmp in proxy_results:
             for proxy_addr in tmp:
                 self.dict[proxy_addr] = {'status':'unverified', 'lastUsedTime':0}
-        pool = multiprocessing.Pool(30)
+        pool = multiprocessing.Pool(50)
         results = pool.map(is_proxy_valid, self.dict.keys())
         pool.close()
         pool.join()
-        for i in results:
-            state = i[1]
-            proxy_addr = i[0]
-            if state:
-                self.dict[proxy_addr]['status'] = 'valid'
+        for res in results:
+            if res[1]:
+                self.dict[res[0]]['status'] = 'valid'
             else:
-                self.dict[proxy_addr]['status'] = 'invalid'
+                self.dict[res[0]]['status'] = 'invalid'
          
         print "Time spent for parsing proxies:", round((time.time()-t0),1),"secs"
         print "Get %s proxies" % len(self.dict)
@@ -97,7 +94,7 @@ if __name__ == '__main__':
     proxy = ProxySearcher()
     
     urls = []
-    for i in range(4267,4287):
+    for i in range(4200,4287):
         urls.append("http://www.youdaili.net/Daili/http/%s.html"%i)
     proxy.search_proxy_list(urls)
     
